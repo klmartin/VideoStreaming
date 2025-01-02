@@ -27,6 +27,7 @@ async function runServer() {
         app.get('/', (req, res) => {
             res.send('Server is up and running');
           });
+        console.log(`The server is Running on port ${PORT}`, 'server');
         warnLog(`The server is running on port ${PORT}`, 'server');
       });
   
