@@ -93,7 +93,7 @@ const hls = {
       exc.stderr.on('data', (data) => {
         console.log('stderr data:', data.toString());
         videoConversionProgress(data, command.duration);
-        videoConversionPercent(data, command.duration);
+        // videoConversionPercent(data, command.duration);
       });
   
       exc.on('close', (code) => {
