@@ -22,6 +22,7 @@ async function runServer() {
   server.listen(PORT, async () => {
     api(app);
     warnLog(`The server is Running on port ${PORT}`, 'server');
+    console.log(`The server is Running on port ${PORT}`, 'server');
   });
   server.on('dropRequest', (e) => console.log(e));
   server.on('close', () => console.log('HTTP Server stopped'));
