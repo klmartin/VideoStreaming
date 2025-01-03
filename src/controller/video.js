@@ -58,8 +58,10 @@ const videoController = {
   async videoUpload(req, res) {
     try {
       console.log("uploading video");
-      const { body, file, payload } = req;
-      const { id, isTail } = body;
+      console.log(req.body);
+      const { file } = req;
+      const { id, isTail,body,user_id,price,type,pinned } = req.body;
+    
       const extension = getFileExtension(file.originalname);
 
       if (!extension || !['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(extension.toLowerCase())) {
@@ -67,7 +69,6 @@ const videoController = {
       }
 
       const { filename, videoDirectoryPath, videoSourcePath, videoId } = await createVideoData(id, extension);
-
 
       console.log("videoId generated"+ videoId);
       appendFile(videoSourcePath, Buffer.from(file.buffer), (err) => {
@@ -88,7 +89,11 @@ const videoController = {
         await videoQueueItem.createItem(videoId, {
           videoDirectoryPath,
           filename,
-          userId: payload.id,
+          body:body,
+          user_id:user_id,
+          price:price,
+          type:type,
+          pinned:pinned,
         });
 
         videoConversion.init();
@@ -190,3 +195,6 @@ const videoController = {
 };
 
 module.exports = videoController;
+
+
+

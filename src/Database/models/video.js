@@ -54,7 +54,7 @@ const modelsVideo = {
    * @param {string} [HLSUrl]
    * @returns `Object` with message and status in `boolean`
    */
-  async insertVideo(id, userId, originalUrl) {
+  async insertVideo(id, userId, originalUrl, price,body,pinned,type) {
     console.log('video insertion start');
 
     // Checking all params ok or not
@@ -70,15 +70,16 @@ const modelsVideo = {
       id: ['string', 'number'],
       originalUrl: ['string', 'number'],
       userId: ['string', 'number'],
+      body:['string'],
+      type:['string'],
     };
-    checkParameters(paramType, { id, originalUrl, userId },CODES.VIDEO_TABLE_PARAMS_ERROR);
+    checkParameters(paramType, { id, originalUrl, userId, price, pinned, body,type },CODES.VIDEO_TABLE_PARAMS_ERROR);
 
 
     try {
-      const sql = `INSERT INTO video (id, user_id, original_path, time_stamp) values (?, ?, ?, ?)`;
-      const SQLparams = [id, userId, originalUrl, Date.now()];
+      const sql = `INSERT INTO video ( user_id, original_path, time_stamp,price, pinned, body,type) values ( ?, ?, ?, ?, ?, ?, ?)`;
+      const SQLparams = [ userId, originalUrl, Date.now(), parseFloat(price), parseInt(pinned), body, type];
       const data = await run(sql, SQLparams);
-
       return { message: 'successfully inserted', ok: true, ...data };
     } catch (error) {
       throw new CustomError({

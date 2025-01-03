@@ -42,15 +42,16 @@ const operation = {
    * @param {string | number} frameRate
    * @param {number} videoDuration
    */
-  async metaInfoAndVideo(videoId, userId, metaData, fileSize, frameRate, videoDuration, originalVideoPath) {
+  async metaInfoAndVideo(videoId, userId, metaData, fileSize, frameRate, videoDuration, originalVideoPath,price,body,pinned,type) {
     infoLog('start', 'ffmpeg-operation-metaInfoAndVideo');
     console.log('video id ' +videoId);
     if (this.isPendingOperation(CODES.VIDEO_TABLE_SUCCESS.code)) {
-      await models.video.insertVideo(videoId, userId, originalVideoPath);
+      await models.video.insertVideo(videoId, userId, originalVideoPath,price,body,pinned,type);
       videoProcessStatusCode = CODES.VIDEO_TABLE_SUCCESS.code;
     } else {
       infoLog('Already Done', 'Video-Table-Insert');
     }
+
 
     if (this.isPendingOperation(CODES.VIDEO_META_TABLE_SUCCESS.code)) {
       await models.metaData.insertVideoMetaData({
@@ -158,11 +159,10 @@ const operation = {
       console.log('videoSourceAbsolutePath4'+videoSourceAbsolutePath);
 
       const { hlsUrl } = await videoQueueItem.getVideoItem(videoId);
-      console.log('videoSourceAbsolutePath5'+videoSourceAbsolutePath);
+      console.log('hlsUrl'+hlsUrl);
 
       await models.hlsVideo.hlsInsert(videoId, hlsUrl);
       console.log('videoSourceAbsolutePath6'+videoSourceAbsolutePath);
-
       videoProcessStatusCode = CODES.HLS_TABLE_SUCCESS.code;
     } else {
       infoLog('Already Done', 'HLS-Video-Table_Insert');
@@ -183,11 +183,11 @@ const videoConversion = {
     const queueItem = await videoQueueItem.getVideoItem();
     if (typeof queueItem === 'object') {
       
-      const { id, videoDirectoryPath, userId = 10, filename, statusCode } = queueItem;
+      const { id, videoDirectoryPath, user_id, filename, statusCode,price,body,pinned,type } = queueItem;
       try {
         const videoSourceAbsolutePath = joinPath(videoDirectoryPath, filename);
         videoProcessStatusCode = statusCode;
-
+        console.log('videoSourceAbsolutePath hls'+videoSourceAbsolutePath);
         const { streams, format } = await getMeteData(videoSourceAbsolutePath);
         const stream = streams.find((v) => v.codec_type === 'video');
         const { height, width, r_frame_rate: frameRate, duration, rotation } = stream || streams[0];
@@ -196,11 +196,13 @@ const videoConversion = {
         }
         const videoDuration = typeof duration !== 'number' ? format.duration : duration;
 
-        await operation.metaInfoAndVideo(id, userId, stream || streams[0], format.size, frameRate, videoDuration, videoSourceAbsolutePath);
+        await operation.metaInfoAndVideo(id, user_id, stream || streams[0], format.size, frameRate, videoDuration, videoSourceAbsolutePath,price,body,pinned,type);
         await operation.thumbnail(id, videoSourceAbsolutePath, height, height / width, { size: [256] });
         await operation.hlsAndHlsTable(id, videoSourceAbsolutePath, videoDuration, stream || streams[0]);
 
         videoQueueItem.updateStatusCode(id, videoProcessStatusCode, true);
+        await videoQueueItem.sendVideoToServer(id,price,body,pinned);
+
         isMachineBusy = false;
         videoConversion.init();
       } catch (error) {

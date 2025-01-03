@@ -124,6 +124,7 @@ const videoQueueItem = {
     infoLog(`Video queue item ${id} updated.`);
     return { ok: true };
   },
+
   async deleteItem(id) {
     if (!Array.isArray(queueContainer)) queueContainer = [];
     try {
@@ -135,6 +136,10 @@ const videoQueueItem = {
       return { ok: false };
     }
   },
+
+  async sendVideoToServer(id,data){
+    
+  }
 };
 
 module.exports = videoQueueItem;
