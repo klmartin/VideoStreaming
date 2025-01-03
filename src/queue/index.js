@@ -1,4 +1,5 @@
 const fs = require('fs');
+const axios = require('axios');
 let queueContainer = require('./videoQueueContainer.json');
 const { CODES, CustomError } = require('../error');
 const { checkParameters } = require('../utils');
@@ -40,6 +41,7 @@ const videoQueueItem = {
 
     console.log('Received status code:', code);
     console.log('Received status id:', id);
+    console.log()
     if (typeof errorMessage === 'boolean') {
       hasError = errorMessage;
     }
@@ -137,9 +139,39 @@ const videoQueueItem = {
     }
   },
 
-  async sendVideoToServer(id,data){
+
+  async  sendVideoToServer(id, price, body, pinned) {
+    console.log([id, price, body, pinned]);
+    console.log("sendVideoToServer");
+  
+    // Define the API endpoint and the data you want to send
+    const apiEndpoint = 'https://bangapp.pro/BangAppBackend/api/videoAddServer/'; // Replace with your actual API endpoint
     
+    // Prepare the data to be sent to the Laravel server
+    const data = {
+      user_id: id,       // User ID (assuming id is the user ID)
+      price: price,      // Price
+      body: body,        // Video body (e.g., description)
+      pinned: pinned,    // Pinned status
+      path: id, // You can dynamically replace this with the actual video path
+      type: 'video',     // Assuming the type is always 'video'
+      thumbnail_url: 'thumbnail-url', // Add the thumbnail URL dynamically if needed
+      aspect_ratio: 'aspect-ratio',   // Add the aspect ratio dynamically if needed
+      cache_url: 'cache-url'         // Add the cache URL dynamically if needed
+    };
+  
+    try {
+      // Send the POST request to the Laravel API
+      const response = await axios.post(apiEndpoint, data);
+  
+      // Log the response from the Laravel API
+      console.log('Video added successfully:', response.data);
+    } catch (error) {
+      // Handle errors (e.g., API errors)
+      console.error('Error sending video to server:', error.response ? error.response.data : error.message);
+    }
   }
+
 };
 
 module.exports = videoQueueItem;

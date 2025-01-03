@@ -28,7 +28,10 @@ const createVideoData = async (id, extension) => {
 
   const videoId =  randomUUID();
   const filename = `${config.FILENAME.VIDEO_ORIGINAL}.${extension}`;
+  console.log('filename'+filename)
   const videoDirectoryPath = joinPath(config.PATH.VIDEO_STORAGE, videoId);
+  console.log('videoDirectoryPath',videoDirectoryPath);
+  console.log([config.PATH.VIDEO_STORAGE, videoId]);
   createDirectory(videoDirectoryPath);
 
   const videoItem = {

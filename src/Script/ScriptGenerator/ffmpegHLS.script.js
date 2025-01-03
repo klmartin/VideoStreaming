@@ -88,45 +88,102 @@ const audioVideoMapped = async (metadata) => {
  * @param {string} [destination]
  * @returns
  */
+// const HLSVideo = async (sourceVideoPath, destination) => {
+//   // Resolve input video file path
+//   console.log('sourceVideoPath'+sourceVideoPath)
+//   const inputFilePath1 = /http:|https:/.test(sourceVideoPath) || path.isAbsolute(sourceVideoPath) ? sourceVideoPath : path.join(__dirname, sourceVideoPath);
+// console.log(inputFilePath1);
+//  // Project root directory
+//  const rootDir = path.resolve(__dirname, '..', '..');  // Move two levels up to reach project root
+
+//  // Resolve the input file path
+//  let inputFilePath = /http:|https:/.test(sourceVideoPath) || path.isAbsolute(sourceVideoPath)
+//    ? sourceVideoPath
+//    : path.join(rootDir, sourceVideoPath);  // Resolve relative to the project root
+
+//  console.log('Resolved inputFilePath: ' + inputFilePath);  // Debugging line to check the resolved path
+
+//  // Remove '/src' from the path if it's part of the resolved path
+//  if (inputFilePath.includes('/src/')) {
+//    inputFilePath = inputFilePath.replace('/src/', '/');  // This will remove the '/src/' from the path
+//  }
+
+//  console.log('Fixed inputFilePath (no /src/): ' + inputFilePath);
+//   const pathArray = destination || inputFilePath.split(/\/|\\/).slice(0, -1);
+//   const hlsVideoDestinationPath = typeof pathArray === 'string' ? pathArray : utils.joinPath(...pathArray);
+//   if (/http:|https:/.test(sourceVideoPath) && !destination) {
+//     throw new CustomError({ message: 'destination required with web url', code: CODES.HLS_SCRIPT_ERROR.code, name: 'HLS Script Generator' });
+//   }
+//   const videoMetadata = await getMeteData(inputFilePath);
+//   console.log('hlsVideoDestinationPath',hlsVideoDestinationPath)
+//   // HLS Script parameters
+//   // const preCudaScript = '-hwaccel nvdec -hwaccel_output_format cuda -extra_hw_frames 5';
+//   const preCudaScript = '-extra_hw_frames 5'; 
+//   const audioVideoCodecs = '-c:v libx264 -c:a aac';
+//   const audioVideoMapScript = await audioVideoMapped(videoMetadata);
+//   const hlsPostScript = '-threads 0 -f hls -hls_playlist_type event -hls_time 3';
+//   const segmentName = `-hls_segment_filename "${utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/file-%00d.ts')}"`;
+//   const masterPlaylistName = '-master_pl_name master.m3u8';
+//   const outputManifestDirectory = utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/manifest.m3u8');
+//   console.log('outputManifestDirectory', outputManifestDirectory)
+//   const script = `ffmpeg -loglevel error -stats ${preCudaScript} -i "${inputFilePath}" ${audioVideoCodecs} ${audioVideoMapScript} ${hlsPostScript} ${segmentName} ${masterPlaylistName} "${outputManifestDirectory}"`;
+//   return { script, destination: `${pathArray.slice(-1)}/hls/master.m3u8`, duration: videoMetadata.format?.duration };
+// };
+
+
 const HLSVideo = async (sourceVideoPath, destination) => {
-  // Resolve input video file path
-  console.log('sourceVideoPath'+sourceVideoPath)
-  const inputFilePath1 = /http:|https:/.test(sourceVideoPath) || path.isAbsolute(sourceVideoPath) ? sourceVideoPath : path.join(__dirname, sourceVideoPath);
-console.log(inputFilePath1);
- // Project root directory
- const rootDir = path.resolve(__dirname, '..', '..');  // Move two levels up to reach project root
+  console.log('sourceVideoPath: ' + sourceVideoPath);
 
- // Resolve the input file path
- let inputFilePath = /http:|https:/.test(sourceVideoPath) || path.isAbsolute(sourceVideoPath)
-   ? sourceVideoPath
-   : path.join(rootDir, sourceVideoPath);  // Resolve relative to the project root
+  // Resolve the project root directory (two levels up from current file)
+  const rootDir = path.resolve(__dirname, '..', '..');  // Move two levels up to reach project root
+  console.log('rootDir:', rootDir);  // Debugging the root directory
 
- console.log('Resolved inputFilePath: ' + inputFilePath);  // Debugging line to check the resolved path
+  // Resolve the input file path based on whether it's absolute or relative
+  let inputFilePath = /http:|https:/.test(sourceVideoPath) || path.isAbsolute(sourceVideoPath)
+    ? sourceVideoPath
+    : path.join(rootDir, sourceVideoPath);  // Resolve relative to the project root
+  console.log('inputFilePath before checking src: ', inputFilePath);
 
- // Remove '/src' from the path if it's part of the resolved path
- if (inputFilePath.includes('/src/')) {
-   inputFilePath = inputFilePath.replace('/src/', '/');  // This will remove the '/src/' from the path
- }
+  // Remove '/src' from the path if it's part of the resolved path
+  if (inputFilePath.includes('/src/')) {
+    inputFilePath = inputFilePath.replace('/src/', '/');  // This will remove the '/src/' from the path
+  }
+  console.log('inputFilePath after checking src: ', inputFilePath);
 
- console.log('Fixed inputFilePath (no /src/): ' + inputFilePath);
-  const pathArray = destination || inputFilePath.split(/\/|\\/).slice(0, -1);
-  const hlsVideoDestinationPath = typeof pathArray === 'string' ? pathArray : utils.joinPath(...pathArray);
+  // Set destination path (ensure this is relative to your project root)
+  const pathArray = destination || sourceVideoPath.split(/\/|\\/).slice(0, -1);
+  console.log('pathArray before join:', pathArray);
+
+  // Here we join the 'public/videos' path with the rest of the relative path
+  const hlsVideoDestinationPath = path.resolve(rootDir, 'public', 'videos', ...pathArray);
+  console.log('Resolved HLS Video Destination Path:', hlsVideoDestinationPath);
+
+  // Ensure that destination is correctly provided if it's a URL
   if (/http:|https:/.test(sourceVideoPath) && !destination) {
     throw new CustomError({ message: 'destination required with web url', code: CODES.HLS_SCRIPT_ERROR.code, name: 'HLS Script Generator' });
   }
+
+  // Get video metadata (unchanged)
   const videoMetadata = await getMeteData(inputFilePath);
 
-  // HLS Script parameters
-  // const preCudaScript = '-hwaccel nvdec -hwaccel_output_format cuda -extra_hw_frames 5';
-  const preCudaScript = '-extra_hw_frames 5'; 
+  // HLS Script parameters (unchanged)
+  const preCudaScript = '-extra_hw_frames 5';
   const audioVideoCodecs = '-c:v libx264 -c:a aac';
   const audioVideoMapScript = await audioVideoMapped(videoMetadata);
   const hlsPostScript = '-threads 0 -f hls -hls_playlist_type event -hls_time 3';
-  const segmentName = `-hls_segment_filename "${utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/file-%00d.ts')}"`;
+
+  // Correct segment name and manifest paths
+  const segmentName = `-hls_segment_filename "${path.join(hlsVideoDestinationPath, 'hls/%v/file-%00d.ts')}"`;
   const masterPlaylistName = '-master_pl_name master.m3u8';
-  const outputManifestDirectory = utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/manifest.m3u8');
+  const outputManifestDirectory = path.join(hlsVideoDestinationPath, 'hls/%v/manifest.m3u8');
+
+  console.log('outputManifestDirectory:', outputManifestDirectory);
 
   const script = `ffmpeg -loglevel error -stats ${preCudaScript} -i "${inputFilePath}" ${audioVideoCodecs} ${audioVideoMapScript} ${hlsPostScript} ${segmentName} ${masterPlaylistName} "${outputManifestDirectory}"`;
+
+  // Return script and destination
   return { script, destination: `${pathArray.slice(-1)}/hls/master.m3u8`, duration: videoMetadata.format?.duration };
 };
+
+
 module.exports = HLSVideo;
