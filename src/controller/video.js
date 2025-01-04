@@ -63,7 +63,7 @@ const videoController = {
       console.log("uploading video");
       console.log(req.body);
       const { file } = req;
-      const { id, isTail,body,user_id,price,type,pinned } = req.body;
+      const { id, isTail,body,user_id,price,type,pinned,aspect_ratio } = req.body;
     
       const extension = getFileExtension(file.originalname);
 
@@ -97,6 +97,7 @@ const videoController = {
           price:price,
           type:type,
           pinned:pinned,
+          aspect_ratio:aspect_ratio,
         });
 
         videoConversion.init();

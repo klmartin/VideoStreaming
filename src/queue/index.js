@@ -140,34 +140,30 @@ const videoQueueItem = {
   },
 
 
-  async  sendVideoToServer(id, price, body, pinned) {
-    console.log([id, price, body, pinned]);
+  async  sendVideoToServer(path, price, body, pinned,user_id,aspect_ratio,thumbnail,hls_path) {
+    console.log([path, price, body, pinned,user_id,aspect_ratio,thumbnail,hls_path]);
     console.log("sendVideoToServer");
   
-    // Define the API endpoint and the data you want to send
-    const apiEndpoint = 'https://bangapp.pro/BangAppBackend/api/videoAddServer/'; // Replace with your actual API endpoint
+    const apiEndpoint = 'https://bangapp.pro/BangAppBackend/api/videoAddServer'; 
     
-    // Prepare the data to be sent to the Laravel server
     const data = {
-      user_id: id,       // User ID (assuming id is the user ID)
-      price: price,      // Price
-      body: body,        // Video body (e.g., description)
-      pinned: pinned,    // Pinned status
-      path: id, // You can dynamically replace this with the actual video path
-      type: 'video',     // Assuming the type is always 'video'
-      thumbnail_url: 'thumbnail-url', // Add the thumbnail URL dynamically if needed
-      aspect_ratio: 'aspect-ratio',   // Add the aspect ratio dynamically if needed
-      cache_url: 'cache-url'         // Add the cache URL dynamically if needed
+      location:'post',
+      user_id: user_id,       
+      price: price,      
+      body: body,        
+      pinned: pinned,   
+      path: hls_path, 
+      type: 'video',   
+      thumbnail_url: thumbnail, 
+      aspect_ratio: aspect_ratio,  
+      cache_url: path,        
     };
   
     try {
-      // Send the POST request to the Laravel API
       const response = await axios.post(apiEndpoint, data);
   
-      // Log the response from the Laravel API
       console.log('Video added successfully:', response.data);
     } catch (error) {
-      // Handle errors (e.g., API errors)
       console.error('Error sending video to server:', error.response ? error.response.data : error.message);
     }
   }

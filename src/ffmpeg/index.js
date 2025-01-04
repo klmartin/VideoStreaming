@@ -91,9 +91,51 @@ const operation = {
    * @returns
    */
 
+  // async thumbnail(videoId, videoDirectoryPath, height, aspectRatio, config) {
+  //   infoLog('Start', 'ffmpeg-operation-thumbnail');
+
+  //   const paramType = {
+  //     videoId: ['string', 'number'],
+  //     videoDirectoryPath: 'string',
+  //     height: 'number',
+  //     aspectRatio: 'number',
+  //   };
+  //   checkParameters(paramType, { videoDirectoryPath, videoId, height, aspectRatio });
+
+  //   if (this.isPendingOperation(CODES.THUMBNAIL_GENERATE_SUCCESS.code)) {
+  //     const imageList = await createThumbnail(videoDirectoryPath, { ...config });
+  //     console.log('imageList',imageList);
+  //     await videoQueueItem.update(videoId, { imageList });
+  //     videoProcessStatusCode = CODES.THUMBNAIL_GENERATE_SUCCESS.code;
+  //   } else {
+  //     infoLog('Already Done', 'FFMPEG-Thumbnail-Generator');
+  //   }
+
+  //   if (this.isPendingOperation(CODES.THUMBNAIL_TABLE_SUCCESS.code, CODES.THUMBNAIL_GENERATE_SUCCESS.code)) {
+  //     infoLog('Inserting start', 'thumbnail-item-insert');
+  //     let { imageList } = await videoQueueItem.getVideoItem(videoId);
+  //     infoLog(imageList);
+  //     if (!imageList || imageList?.length <= 0) {
+  //       imageList = await createThumbnail(videoDirectoryPath, { ...config });
+  //     }
+  //     const startInserting = async () => {
+  //       const imageObject = imageList.shift();
+  //       const pictureHeight = imageObject.size === -1 ? height : imageObject.size;
+  //       const fileSize = statSync(imageObject.output).size;
+  //       await models.thumbnail.insert(randomUUID(), videoId, imageObject.url, fileSize, pictureHeight, aspectRatio * pictureHeight);
+  //       return imageList.length > 0 ? startInserting() : null;
+  //     };
+  //     await startInserting();
+  //     videoProcessStatusCode = CODES.THUMBNAIL_TABLE_SUCCESS.code;
+  //   } else {
+  //     infoLog('Already Done', 'Thumbnail-Table-Insert');
+  //   }
+  //   return null;
+  // },
+
   async thumbnail(videoId, videoDirectoryPath, height, aspectRatio, config) {
     infoLog('Start', 'ffmpeg-operation-thumbnail');
-
+  
     const paramType = {
       videoId: ['string', 'number'],
       videoDirectoryPath: 'string',
@@ -101,36 +143,43 @@ const operation = {
       aspectRatio: 'number',
     };
     checkParameters(paramType, { videoDirectoryPath, videoId, height, aspectRatio });
-
+  
+    let imageList = [];
+  
     if (this.isPendingOperation(CODES.THUMBNAIL_GENERATE_SUCCESS.code)) {
-      const imageList = await createThumbnail(videoDirectoryPath, { ...config });
+      imageList = await createThumbnail(videoDirectoryPath, { ...config });
       await videoQueueItem.update(videoId, { imageList });
       videoProcessStatusCode = CODES.THUMBNAIL_GENERATE_SUCCESS.code;
     } else {
       infoLog('Already Done', 'FFMPEG-Thumbnail-Generator');
     }
-
+  
     if (this.isPendingOperation(CODES.THUMBNAIL_TABLE_SUCCESS.code, CODES.THUMBNAIL_GENERATE_SUCCESS.code)) {
       infoLog('Inserting start', 'thumbnail-item-insert');
-      let { imageList } = await videoQueueItem.getVideoItem(videoId);
-      infoLog(imageList);
-      if (!imageList || imageList?.length <= 0) {
-        imageList = await createThumbnail(videoDirectoryPath, { ...config });
+      let { imageListFromDB } = await videoQueueItem.getVideoItem(videoId);
+      infoLog(imageListFromDB);
+  
+      if (!imageListFromDB || imageListFromDB?.length <= 0) {
+        imageListFromDB = await createThumbnail(videoDirectoryPath, { ...config });
       }
+  
       const startInserting = async () => {
-        const imageObject = imageList.shift();
+        const imageObject = imageListFromDB.shift();
         const pictureHeight = imageObject.size === -1 ? height : imageObject.size;
         const fileSize = statSync(imageObject.output).size;
         await models.thumbnail.insert(randomUUID(), videoId, imageObject.url, fileSize, pictureHeight, aspectRatio * pictureHeight);
-        return imageList.length > 0 ? startInserting() : null;
+        return imageListFromDB.length > 0 ? startInserting() : null;
       };
       await startInserting();
       videoProcessStatusCode = CODES.THUMBNAIL_TABLE_SUCCESS.code;
     } else {
       infoLog('Already Done', 'Thumbnail-Table-Insert');
     }
-    return null;
+  
+    // Return the list of thumbnails (imageList)
+    return imageList;
   },
+  
 
   /**
    *
@@ -183,7 +232,7 @@ const videoConversion = {
     const queueItem = await videoQueueItem.getVideoItem();
     if (typeof queueItem === 'object') {
       
-      const { id, videoDirectoryPath, user_id, filename, statusCode,price,body,pinned,type } = queueItem;
+      const { id, videoDirectoryPath, user_id, filename, statusCode,price,body,pinned,type,aspect_ratio } = queueItem;
       try {
         const videoSourceAbsolutePath = joinPath(videoDirectoryPath, filename);
         videoProcessStatusCode = statusCode;
@@ -195,13 +244,13 @@ const videoConversion = {
           await videoQueueItem.update(id, { rotation });
         }
         const videoDuration = typeof duration !== 'number' ? format.duration : duration;
-
         await operation.metaInfoAndVideo(id, user_id, stream || streams[0], format.size, frameRate, videoDuration, videoSourceAbsolutePath,price,body,pinned,type);
-        await operation.thumbnail(id, videoSourceAbsolutePath, height, height / width, { size: [256] });
+        const thumbnail = await operation.thumbnail(id, videoSourceAbsolutePath, height, height / width, { size: [256] });
         await operation.hlsAndHlsTable(id, videoSourceAbsolutePath, videoDuration, stream || streams[0]);
-
         videoQueueItem.updateStatusCode(id, videoProcessStatusCode, true);
-        await videoQueueItem.sendVideoToServer(id,price,body,pinned);
+        const { hlsUrl } = await videoQueueItem.getVideoItem(id);
+        console.log('hlsUrl'+hlsUrl);
+        await videoQueueItem.sendVideoToServer(videoSourceAbsolutePath,price,body,pinned,user_id,aspect_ratio,thumbnail[0].output,hlsUrl);
 
         isMachineBusy = false;
         videoConversion.init();
