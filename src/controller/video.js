@@ -73,7 +73,6 @@ const videoController = {
 
       const { filename, videoDirectoryPath, videoSourcePath, videoId } = await createVideoData(id, extension);
 
-      console.log("videoId generated"+ videoId);
       appendFile(videoSourcePath, Buffer.from(file.buffer), (err) => {
         if (err) {
           throw err;
