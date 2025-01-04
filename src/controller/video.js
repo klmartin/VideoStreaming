@@ -1,6 +1,6 @@
 const { appendFile } = require('fs');
 const { randomUUID } = require('crypto');
-
+const { CustomError, CODES } = require('../error');
 const config = require('../../config');
 const { infoLog } = require('../logger');
 const videoQueueItem = require('../queue');
@@ -97,6 +97,7 @@ const videoController = {
           type:type,
           pinned:pinned,
           aspect_ratio:aspect_ratio,
+          video_id:videoId
         });
 
         videoConversion.init();
@@ -195,6 +196,40 @@ const videoController = {
     }
     return null;
   },
+
+
+  async getVideoProgress(req,res) {
+    console.log('req',req.params.id);
+    const  video_id = req.params.id 
+  
+    if (!video_id) {
+      throw new CustomError({
+        message: 'Video ID is required',
+        name: 'MISSING_VIDEO_ID',
+      });
+    }
+  
+    try {
+      const query = `SELECT progress_percentage, status, updated_at FROM video_progress WHERE video_id = ? LIMIT 1`;
+      const params = [video_id];
+      const result = await get(query, params);  
+      if (!result) {
+        return { message: 'No progress found for this video_id', ok: false };
+      }
+      
+      res.status(200).send(result);
+    } catch (error) {
+      console.error('Error retrieving video progress:', error);
+      throw new CustomError({
+        ...error,
+        message: error.message,
+      });
+      res.status(500).send(CustomError);
+    }
+  }
+  
+
+
 };
 
 module.exports = videoController;

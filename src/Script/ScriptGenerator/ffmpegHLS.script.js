@@ -125,7 +125,7 @@ console.log(inputFilePath1);
   const segmentName = `-hls_segment_filename "${utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/file-%00d.ts')}"`;
   const masterPlaylistName = '-master_pl_name master.m3u8';
   const outputManifestDirectory = utils.joinPath(hlsVideoDestinationPath || '.', 'hls/%v/manifest.m3u8');
-  console.log('outputManifestDirectory', outputManifestDirectory)
+  
   const script = `ffmpeg -loglevel error -stats ${preCudaScript} -i "${inputFilePath}" ${audioVideoCodecs} ${audioVideoMapScript} ${hlsPostScript} ${segmentName} ${masterPlaylistName} "${outputManifestDirectory}"`;
   return { script, destination: `${pathArray.slice(-1)}/hls/master.m3u8`, duration: videoMetadata.format?.duration };
 };

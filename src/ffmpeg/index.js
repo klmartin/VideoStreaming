@@ -46,7 +46,7 @@ const operation = {
     infoLog('start', 'ffmpeg-operation-metaInfoAndVideo');
     console.log('video id ' +videoId);
     if (this.isPendingOperation(CODES.VIDEO_TABLE_SUCCESS.code)) {
-      await models.video.insertVideo(videoId, userId, originalVideoPath,price,body,pinned,type);
+      await models.video.insertVideo(videoId, userId, originalVideoPath,price,body,pinned,type,videoId);
       videoProcessStatusCode = CODES.VIDEO_TABLE_SUCCESS.code;
     } else {
       infoLog('Already Done', 'Video-Table-Insert');
@@ -193,7 +193,7 @@ const operation = {
     console.log(CODES.HLS_SUCCESS.code)
      if (this.isPendingOperation(CODES.HLS_SUCCESS.code)) {
       console.log('videoSourceAbsolutePath1'+videoSourceAbsolutePath);
-      const { hlsUrl } = await hls.convertor(videoSourceAbsolutePath, videoDuration, metadata);
+      const { hlsUrl } = await hls.convertor(videoSourceAbsolutePath, videoDuration, metadata,videoId);
       console.log('videoSourceAbsolutePath2'+videoSourceAbsolutePath);
 
       await videoQueueItem.update(videoId, { hlsUrl });
@@ -236,7 +236,6 @@ const videoConversion = {
       try {
         const videoSourceAbsolutePath = joinPath(videoDirectoryPath, filename);
         videoProcessStatusCode = statusCode;
-        console.log('videoSourceAbsolutePath hls'+videoSourceAbsolutePath);
         const { streams, format } = await getMeteData(videoSourceAbsolutePath);
         const stream = streams.find((v) => v.codec_type === 'video');
         const { height, width, r_frame_rate: frameRate, duration, rotation } = stream || streams[0];
@@ -249,7 +248,6 @@ const videoConversion = {
         await operation.hlsAndHlsTable(id, videoSourceAbsolutePath, videoDuration, stream || streams[0]);
         videoQueueItem.updateStatusCode(id, videoProcessStatusCode, true);
         const { hlsUrl } = await videoQueueItem.getVideoItem(id);
-        console.log('hlsUrl'+hlsUrl);
         await videoQueueItem.sendVideoToServer(videoSourceAbsolutePath,price,body,pinned,user_id,aspect_ratio,thumbnail[0].output,hlsUrl);
 
         isMachineBusy = false;

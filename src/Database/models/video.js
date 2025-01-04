@@ -54,31 +54,24 @@ const modelsVideo = {
    * @param {string} [HLSUrl]
    * @returns `Object` with message and status in `boolean`
    */
-  async insertVideo(id, userId, originalUrl, price,body,pinned,type) {
+  async insertVideo(id, userId, originalUrl, price,body,pinned,type,video_id) {
     console.log('video insertion start');
 
-    // Checking all params ok or not
-    const paramTypes = [id, userId, originalUrl, Date.now()];
-    console.log('paramTypes'+paramTypes);
-    // const params = {
-    //   id: id, // string (valid)
-    //   userId: userId,     // number (valid)
-    //   originalUrl: originalUrl  // string (valid)
-    // };
-
+    
     const paramType = {
       id: ['string', 'number'],
       originalUrl: ['string', 'number'],
       userId: ['string', 'number'],
       body:['string'],
       type:['string'],
+      video_id:['string'],
     };
-    checkParameters(paramType, { id, originalUrl, userId, price, pinned, body,type },CODES.VIDEO_TABLE_PARAMS_ERROR);
+    checkParameters(paramType, { id, originalUrl, userId, price, pinned, body,type,video_id },CODES.VIDEO_TABLE_PARAMS_ERROR);
 
 
     try {
-      const sql = `INSERT INTO video ( user_id, original_path, time_stamp,price, pinned, body,type) values ( ?, ?, ?, ?, ?, ?, ?)`;
-      const SQLparams = [ userId, originalUrl, Date.now(), parseFloat(price), parseInt(pinned), body, type];
+      const sql = `INSERT INTO video ( user_id, original_path, time_stamp,price, pinned, body,type,video_id) values ( ?, ?, ?, ?, ?, ?, ?, ?)`;
+      const SQLparams = [ userId, originalUrl, Date.now(), parseFloat(price), parseInt(pinned), body, type, video_id];
       const data = await run(sql, SQLparams);
       return { message: 'successfully inserted', ok: true, ...data };
     } catch (error) {
@@ -135,6 +128,94 @@ const modelsVideo = {
     await run(sql, [id]);
     return { ok: true };
   },
+
+  // async insertVideoProgress(percent, video_id) {
+  //   console.log('Video progress insertion start: Progress', percent*100, 'ID', video_id);
+  
+  //   const paramType = {
+  //     percent:  ['string', 'number'],
+  //     video_id: ['string', 'number'],
+  //   };
+  
+  //   // Check if parameters are valid
+  //   checkParameters(paramType, { percent, video_id }, CODES.VIDEO_TABLE_PARAMS_ERROR);
+  
+  //   try {
+  //     const checkQuery = `SELECT 1 FROM video_progress WHERE video_id = ? LIMIT 1`;
+  //     const checkParams = [video_id];
+  //     const checkResult = await run(checkQuery, checkParams);
+  
+  //     let result;
+  
+  //     if (checkResult && checkResult.length > 0) {
+  //       const updateQuery = `UPDATE video_progress SET progress_percentage = ?, updated_at = CURRENT_TIMESTAMP, status = ?, WHERE video_id = ?`;
+  //       const updateParams = [percent*100, video_id, 'converting'];
+  //       result = await run(updateQuery, updateParams);
+  //       console.log(`Progress for video_id ${video_id} updated to ${percent}%`);
+  //     } else {
+  //       // If video_id does not exist, insert a new record
+  //       const insertQuery = `INSERT INTO video_progress (progress_percentage, video_id, status) VALUES (?, ?, ?)`;
+  //       const insertParams = [percent, video_id, 'converting'];
+  //       result = await run(insertQuery, insertParams);
+  //       console.log(`Progress for video_id ${video_id} inserted with ${percent}%`);
+  //     }
+  
+  //     return { message: 'Operation successful', ok: true, data: result };
+  //   } catch (error) {
+  //     throw new CustomError({
+  //       ...error,
+  //       message: error.message,
+  //       name: 'SQL-VIDEO-TABLE-INSERTING-ERROR',
+  //       code: CODES.VIDEO_TABLE_ERROR.code,
+  //     });
+  //   }
+  // },
+
+  async insertVideoProgress(percent, video_id) {
+    console.log('Video progress insertion start: Progress', percent * 100, 'ID', video_id);
+  
+    const paramType = {
+      percent: ['string', 'number'],
+      video_id: ['string', 'number'],
+    };
+  
+    checkParameters(paramType, { percent, video_id }, CODES.VIDEO_TABLE_PARAMS_ERROR);
+  
+    try {
+      const checkQuery = `SELECT video_id FROM video_progress WHERE video_id = ? LIMIT 1`;
+      const checkParams = [video_id];
+      const checkResult = await get(checkQuery, checkParams);
+      console.log('checkResult',checkResult);
+      let result;
+  
+      if (checkResult) {
+        console.log('updating')
+        const updateQuery = `UPDATE video_progress SET progress_percentage = ?, updated_at = CURRENT_TIMESTAMP, status = ? WHERE video_id = ?`;
+        const updateParams = [percent * 100, 'converting', video_id]; 
+        result = await run(updateQuery, updateParams);
+        console.log(`Progress for video_id ${video_id} updated to ${percent * 100}%`);
+      } else {
+        console.log('inserting')
+        const insertQuery = `INSERT INTO video_progress (progress_percentage, video_id, status) VALUES (?, ?, ?)`;
+        const insertParams = [percent * 100, video_id, 'converting'];
+        result = await run(insertQuery, insertParams);
+        console.log(`Progress for video_id ${video_id} inserted with ${percent * 100}%`);
+      }
+  
+      return { message: 'Operation successful', ok: true, data: result };
+    } catch (error) {
+      throw new CustomError({
+        ...error,
+        message: error.message,
+        name: 'SQL-VIDEO-TABLE-INSERTING-ERROR',
+        code: CODES.VIDEO_TABLE_ERROR.code,
+      });
+    }
+  }
+  
+  
 };
 
 module.exports = modelsVideo;
+
+
