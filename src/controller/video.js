@@ -1,4 +1,5 @@
 const { appendFile } = require('fs');
+const fs = require('fs');
 const { randomUUID } = require('crypto');
 const { CustomError, CODES } = require('../error');
 const config = require('../../config');
@@ -9,6 +10,7 @@ const models = require('../Database/models');
 const { joinPath, createDirectory } = require('../utils');
 const { setVideoProfile, updateVideoProfile, deleteVideoProfile } = require('../Database/models/video');
 const { get } = require('../Database/SQLMethod');
+const path = require('path');
 
 // Object to store video data temporarily
 const items = {};
@@ -26,11 +28,11 @@ const createVideoData = async (id, extension) => {
   const item = items[id];
   if (item) return { videoId: id, ...item };
 
-  const videoId =  randomUUID();
+  const videoId = randomUUID();
   const filename = `${config.FILENAME.VIDEO_ORIGINAL}.${extension}`;
-  console.log('filename'+filename)
+  console.log('filename' + filename)
   const videoDirectoryPath = joinPath(config.PATH.VIDEO_STORAGE, videoId);
-  console.log('videoDirectoryPath',videoDirectoryPath);
+  console.log('videoDirectoryPath', videoDirectoryPath);
   console.log([config.PATH.VIDEO_STORAGE, videoId]);
   createDirectory(videoDirectoryPath);
 
@@ -63,8 +65,8 @@ const videoController = {
       console.log("uploading video");
       console.log(req.body);
       const { file } = req;
-      const { id, isTail,body,user_id,price,type,pinned,aspect_ratio } = req.body;
-    
+      const { id, isTail, body, user_id, price, type, pinned, aspect_ratio } = req.body;
+
       const extension = getFileExtension(file.originalname);
 
       if (!extension || !['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(extension.toLowerCase())) {
@@ -91,13 +93,13 @@ const videoController = {
         await videoQueueItem.createItem(videoId, {
           videoDirectoryPath,
           filename,
-          body:body,
-          user_id:user_id,
-          price:price,
-          type:type,
-          pinned:pinned,
-          aspect_ratio:aspect_ratio,
-          video_id:videoId
+          body: body,
+          user_id: user_id,
+          price: price,
+          type: type,
+          pinned: pinned,
+          aspect_ratio: aspect_ratio,
+          video_id: videoId
         });
 
         videoConversion.init();
@@ -198,25 +200,25 @@ const videoController = {
   },
 
 
-  async getVideoProgress(req,res) {
-    console.log('req',req.params.id);
-    const  video_id = req.params.id 
-  
+  async getVideoProgress(req, res) {
+
+    const video_id = req.params.id
+
     if (!video_id) {
       throw new CustomError({
         message: 'Video ID is required',
         name: 'MISSING_VIDEO_ID',
       });
     }
-  
+
     try {
       const query = `SELECT progress_percentage, status, updated_at FROM video_progress WHERE video_id = ? LIMIT 1`;
       const params = [video_id];
-      const result = await get(query, params);  
+      const result = await get(query, params);
       if (!result) {
         return { message: 'No progress found for this video_id', ok: false };
       }
-      
+
       res.status(200).send(result);
     } catch (error) {
       console.error('Error retrieving video progress:', error);
@@ -226,13 +228,80 @@ const videoController = {
       });
       res.status(500).send(CustomError);
     }
+  },
+
+  async deleteVideo(req, res) {
+    const video_id = req.params.id;
+    console.log('Video ID:', video_id);
+
+    if (!video_id) {
+      throw new CustomError({
+        message: 'Video ID is required',
+        name: 'MISSING_VIDEO_ID',
+      });
+    }
+
+    try {
+      const params = [video_id];
+
+      const videoPathQuery = 'SELECT original_path FROM video WHERE video_id = ?';
+      const hlsPathQuery = 'SELECT hls_url FROM hls_video WHERE video_id = ?';
+      const videoPath = await get(videoPathQuery, params);
+      const hlsPath = await get(hlsPathQuery, params);
+
+      if (!videoPath || !hlsPath) {
+        return res.status(404).json({ message: 'Video or HLS data not found in the database' });
+      }
+
+      const projectRoot = path.resolve(__dirname, '../../');
+      const videoFolderPath = path.join(projectRoot, 'public', 'videos', videoPath.original_path);
+      const hlsFolderPath = path.join(projectRoot, 'public', 'videos', hlsPath.hls_url);
+
+      console.log('Resolved video directory path:', videoFolderPath);
+      console.log('Resolved HLS directory path:', hlsFolderPath);
+
+      fs.rm(videoFolderPath, { recursive: true, force: true }, (err) => {
+        if (err) {
+          console.error('Error deleting video directory:', err);
+          return res.status(500).json({ message: 'Error deleting video directory' });
+        }
+
+        fs.rm(hlsFolderPath, { recursive: true, force: true }, async (err) => {
+          if (err) {
+            console.error('Error deleting HLS directory:', err);
+            return res.status(500).json({ message: 'Error deleting HLS directory' });
+          }
+
+          const deleteHlsQuery = 'DELETE FROM hls_video WHERE video_id = ?';
+          const deleteProgress = 'DELETE FROM video_progress WHERE video_id = ?';
+          const deleteVideoQuery = 'DELETE FROM video WHERE video_id = ?';
+
+          try {
+            await get(deleteHlsQuery, params);
+            await get(deleteProgress, params);
+            await get(deleteVideoQuery, params);
+
+            res.status(200).json({ message: 'Video and related data deleted successfully' });
+          } catch (dbError) {
+            console.error('Error deleting video data from database:', dbError);
+            res.status(500).json({ message: 'Error deleting video data from database' });
+          }
+        });
+      });
+
+    } catch (error) {
+      console.error('Error during video deletion process:', error);
+      res.status(500).json({ message: 'Error during video deletion' });
+    }
   }
-  
+
 
 
 };
 
 module.exports = videoController;
+
+
 
 
 
