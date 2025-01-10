@@ -1,91 +1,12 @@
-# WhiteBlob Streaming Server Documentation
+# BangApp Video Streaming Server Documentation
 
 ## Overview
 
-The WhiteBlob Streaming Server is a backend server that supports the WhiteBlob Streaming application. It provides various APIs for user authentication, video management, and video streaming. This documentation outlines the available API endpoints, their usage, and the expected request and response formats.
+The BangApp Streaming Server is a backend server that supports the BangApp application. It provides various APIs for video management, and video streaming. This documentation outlines the available API endpoints, their usage, and the expected request and response formats.
 
 ## API Endpoints
 
-### 1. User Authentication
-
-#### **POST /api/auth/login**
-
-This endpoint is used for user login. It authenticates the user and returns a JWT token on successful authentication.
-
-**Request:**
-
-- **URL:** `/api/auth/login`
-- **Method:** `POST`
-- **Headers:** `Content-Type: application/json`
-- **Body:**
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "userpassword"
-  }
-  ```
-
-**Response:**
-
-- **Success (200):**
-  ```json
-  {
-    "token": "jwt-token-string",
-    "message": "Welcome Back"
-  }
-  ```
-- **Failure (404):**
-  ```json
-  {
-    "message": "User not found"
-  }
-  ```
-- **Failure (401):**
-  ```json
-  {
-    "message": "Invalid credentials"
-  }
-  ```
-
-### 2. User Registration
-
-#### **POST /api/auth/register**
-
-This endpoint is used for user registration. It creates a new user account and returns a JWT token on successful registration.
-
-**Request:**
-
-- **URL:** `/api/auth/register`
-- **Method:** `POST`
-- **Headers:** `Content-Type: application/json`
-- **Body:**
-  ```json
-  {
-    "name": "User Name",
-    "email": "user@example.com",
-    "password": "userpassword"
-  }
-  ```
-
-**Response:**
-
-- **Success (201):**
-  ```json
-  {
-      "message": "successfully registered",
-      "username": "email",
-      "ok": true,
-      "date": Date(),
-  }
-  ```
-- **Failure (400):**
-  ```json
-  {
-    "message": "User already exists"
-  }
-  ```
-
-### 3. Video Management
+### 1. Video Management
 
 #### **GET /api/videos**
 
@@ -293,4 +214,4 @@ This project is licensed under the MIT License.
 
 ---
 
-For any further questions or support, please contact us at [info@whiteblob.site](mailto:info@whiteblob.site).
+For any further questions or support, please contact us at [support.bangap,pro](mailto:support@bangapp.pro).
