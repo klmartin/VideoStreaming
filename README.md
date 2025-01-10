@@ -4,6 +4,8 @@
 
 The BangApp Streaming Server is a backend server that supports the BangApp application. It provides various APIs for video management, and video streaming. This documentation outlines the available API endpoints, their usage, and the expected request and response formats.
 
+This Backend accepts video and converts the video in diffrent resolutions to m3u8 and when streaming it looks at the speed of users internet and check which video resolution to play based on user speed
+
 ## API Endpoints
 
 ### 1. Video Management
