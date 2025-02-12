@@ -232,7 +232,7 @@ const videoConversion = {
     const queueItem = await videoQueueItem.getVideoItem();
     if (typeof queueItem === 'object') {
       
-      const { id, videoDirectoryPath, user_id, filename, statusCode,price,body,pinned,type,aspect_ratio } = queueItem;
+      const { id, videoDirectoryPath, user_id, filename, statusCode,price,body,pinned,type,aspect_ratio,location } = queueItem;
       try {
         const videoSourceAbsolutePath = joinPath(videoDirectoryPath, filename);
         videoProcessStatusCode = statusCode;
@@ -248,7 +248,7 @@ const videoConversion = {
         await operation.hlsAndHlsTable(id, videoSourceAbsolutePath, videoDuration, stream || streams[0]);
         videoQueueItem.updateStatusCode(id, videoProcessStatusCode, true);
         const { hlsUrl } = await videoQueueItem.getVideoItem(id);
-        await videoQueueItem.sendVideoToServer(videoSourceAbsolutePath,price,body,pinned,user_id,aspect_ratio,thumbnail[0].output,hlsUrl);
+        await videoQueueItem.sendVideoToServer(videoSourceAbsolutePath,price,body,pinned,user_id,aspect_ratio,thumbnail[0].output,hlsUrl,location);
 
         isMachineBusy = false;
         videoConversion.init();

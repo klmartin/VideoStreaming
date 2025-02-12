@@ -140,14 +140,14 @@ const videoQueueItem = {
   },
 
 
-  async  sendVideoToServer(path, price, body, pinned,user_id,aspect_ratio,thumbnail,hls_path) {
+  async  sendVideoToServer(path, price, body, pinned,user_id,aspect_ratio,thumbnail,hls_path,location) {
     console.log([path, price, body, pinned,user_id,aspect_ratio,thumbnail,hls_path]);
     console.log("sendVideoToServer");
   
     const apiEndpoint = 'https://bangapp.pro/BangAppBackend/api/videoAddServer'; 
     
     const data = {
-      location:'post',
+      location:location,
       user_id: user_id,       
       price: price,      
       body: body,        
